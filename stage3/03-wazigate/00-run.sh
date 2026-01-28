@@ -3,7 +3,7 @@
 WAZIGATE_DIR=$ROOTFS_DIR/var/lib/wazigate
 
 # Install newer version for libseccomp2
-echo 'deb http://httpredir.debian.org/debian buster-backports main contrib non-free' | sudo tee -a "$ROOTFS_DIR/etc/apt/sources.list.d/debian-backports.list"
+echo 'deb http://archive.debian.org/debian buster-backports main contrib non-free' | sudo tee -a "$ROOTFS_DIR/etc/apt/sources.list.d/debian-backports.list"
 on_chroot <<EOF
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 04EE7237B7D453EC 648ACFD622F3D138
 apt-get update
