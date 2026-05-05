@@ -123,6 +123,9 @@ install -m 755 files/reconnect_wifi.service "$ROOTFS_DIR/etc/systemd/system/reco
 install -m 755 files/reconnect_wifi.timer "$ROOTFS_DIR/etc/systemd/system/reconnect_wifi.timer"
 touch "$ROOT_FS/etc/do_not_reconnect_wifi"
 
+# Copy script for Waveshare UPS HAT
+install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/bin/ups_monitor.py"
+install -m 755 files/ups_monitor.service "$ROOTFS_DIR/etc/systemd/system/ups_monitor.service"
 
 
 # Enable Wazigate services
@@ -131,6 +134,7 @@ systemctl enable mongod
 systemctl enable wazigate
 systemctl enable reconnect_wifi.timer
 systemctl enable shellinabox
+systemctl enable ups_monitor
 EOF
 
 # Create log file for wazigate-setup

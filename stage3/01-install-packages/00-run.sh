@@ -10,4 +10,7 @@ echo \
 
 
 apt-get update
+
+pip3 install smbus2
 EOF
+
