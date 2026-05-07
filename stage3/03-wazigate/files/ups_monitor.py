@@ -8,7 +8,7 @@ import sys
 # Configuration
 I2C_BUS = 1
 I2C_ADDR = 0x42                 # I2C address
-REG_VOLTAGE = 0x01              # Register where to read voltage
+REG_VOLTAGE = 0x02              # Register where to read voltage
 THRESHOLD = 6.1                 # Shutdown voltage threshold (Volts)
 CHECK_INTERVAL = 10             # Seconds between checks
 MAX_CONSECUTIVE_ERRORS = 5      # Stop the service if we fail to read the sensor 5 times in a row
@@ -31,7 +31,7 @@ def read_voltage():
     try:
         # Read the raw 16-bit value from register 0x02
         # Note: We use read_word_data to get 2 bytes at once
-        raw_data = bus.read_word_data(I2C_ADDR, 0x02)
+        raw_data = bus.read_word_data(I2C_ADDR, REG_VOLTAGE)
 
         # Endianness swap: Many chips send the Low Byte first
         # This swaps the bytes to make it readable by the CPU
@@ -41,7 +41,6 @@ def read_voltage():
         # The voltage is stored in the top 13 bits of the 16-bit register.
         # We shift right by 3 and multiply by 4mV (0.004)
         voltage = (raw_data >> 3) * 0.004
-
         return voltage
     except Exception as e:
         logging.error(f"Error reading I2C: {e}")
@@ -68,27 +67,29 @@ def main():
                 if i >= 6:
                     logging.info(f"Current Battery Voltage: {voltage:.2f}V")
                     i = 0
-
+                
                 if voltage < THRESHOLD:
-                    logging.warning(f"CRITICAL: Low voltage ({voltage:.2f}V).")
-
+                    logging.warning(f"CRITICAL: Low voltage ({voltage:.2f}V). Initiating shutdown sequence.")
+                    
+                    # 1. Stop Docker
                     try:
                         subprocess.run(["docker", "compose", "down"], cwd="/var/lib/wazigate/", check=True, capture_output=True, text=True)
+                        logging.info("Docker containers stopped.")
                     except Exception as e:
                         logging.error(f"Docker cleanup failed: {e}")
 
-                    # FORCE SYNC: This ensures the file system buffers are flushed to disk
+                    # 2. Sync and Shutdown
                     logging.info("Syncing file system...")
                     os.system("sync")
-
-                    # Shutdown
+                    
+                    logging.info("Performing shutdown now...")
                     os.system("sudo shutdown -h now")
                     break
 
         except Exception as e:
             consecutive_errors += 1
             logging.error(f"I2C read failure ({consecutive_errors}/{MAX_CONSECUTIVE_ERRORS}): {e}")
-
+            
             if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
                 logging.critical("UPS HAT communication lost permanently. Stopping service.")
                 sys.exit(1)
