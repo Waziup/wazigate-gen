@@ -11,6 +11,6 @@ echo \
 
 apt-get update
 
-pip3 install smbus2
+apt-get install -y python3-smbus2
 EOF
 

@@ -75,7 +75,7 @@ def main():
                     # 1. Stop Docker
                     try:
                         result = subprocess.run(
-                            ["/usr/bin/docker", "compose", "down"], 
+                            ["/usr/local/bin/docker-compose", "down"],
                             cwd="/var/lib/wazigate/", 
                             check=True, 
                             capture_output=True, 

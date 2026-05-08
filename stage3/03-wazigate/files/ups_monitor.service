@@ -1,6 +1,8 @@
 [Unit]
 Description=Waveshare UPS Battery Monitor and Graceful Shutdown
 After=network.target docker.service
+StartLimitIntervalSec=120
+StartLimitBurst=3
 
 [Service]
 Type=simple
@@ -14,8 +16,6 @@ Environment=DOCKER_HOST=unix:///var/run/docker.sock
 # Restart if it crashes, but stop if it fails 3 times in 2 minutes (to prevent loops if the HAT is missing)
 Restart=on-failure
 RestartSec=5
-StartLimitIntervalSec=120
-StartLimitBurst=3
 
 [Install]
 WantedBy=multi-user.target
