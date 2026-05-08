@@ -2,7 +2,7 @@
 
 # add for mongodb source location
 on_chroot <<EOF 
-wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
+wget -qO- https://www.mongodb.org/static/pgp/server-4.4.asc | gpg --dearmor > /usr/share/keyrings/mongodb-archive-keyring.gpg
 
 
 echo \
@@ -11,6 +11,9 @@ echo \
 
 apt-get update
 
-apt-get install -y python3-smbus2
-EOF
+# Install pip and the build dependencies
+apt-get install -y python3-pip python3-setuptools
 
+# Install smbus2 via pip (the most reliable way to get that specific library)
+pip3 install smbus2 || pip3 install --break-system-packages smbus2
+EOF
