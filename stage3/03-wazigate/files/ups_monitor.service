@@ -1,11 +1,21 @@
 [Unit]
-Description=UPS Monitor Service
-After=multi-user.target
+Description=Waveshare UPS Battery Monitor and Graceful Shutdown
+After=network.target docker.service
 
 [Service]
-ExecStart=/usr/bin/python3 /usr/local/bin/ups_monitor.py
-Restart=always
+Type=simple
 User=root
+WorkingDirectory=/var/lib/wazigate/
+ExecStart=/usr/bin/python3 /usr/local/bin/ups_monitor.py
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment=DOCKER_HOST=unix:///var/run/docker.sock
+
+# Restart Logic:
+# Restart if it crashes, but stop if it fails 3 times in 2 minutes (to prevent loops if the HAT is missing)
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=120
+StartLimitBurst=3
 
 [Install]
 WantedBy=multi-user.target

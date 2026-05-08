@@ -1,6 +1,5 @@
 import smbus2
 import time
-import os
 import logging
 import subprocess
 import sys
@@ -12,6 +11,7 @@ REG_VOLTAGE = 0x02              # Register where to read voltage
 THRESHOLD = 6.1                 # Shutdown voltage threshold (Volts)
 CHECK_INTERVAL = 10             # Seconds between checks
 MAX_CONSECUTIVE_ERRORS = 5      # Stop the service if we fail to read the sensor 5 times in a row
+LOG_INTERVAL = 30               # After how many check intervals there will be a log written (CHECK_INTERVAL*LOG_INTERVAL)
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -61,10 +61,11 @@ def main():
     while True:
         try:
             voltage = read_voltage()
-            consecutive_errors = 0 # Reset counter on success
-
             if voltage is not None:
-                if i >= 6:
+                consecutive_errors = 0 # Reset counter on success
+
+                # Log status every 30 successful reads (~5min)
+                if i >= LOG_INTERVAL:
                     logging.info(f"Current Battery Voltage: {voltage:.2f}V")
                     i = 0
                 
@@ -73,18 +74,28 @@ def main():
                     
                     # 1. Stop Docker
                     try:
-                        subprocess.run(["docker", "compose", "down"], cwd="/var/lib/wazigate/", check=True, capture_output=True, text=True)
+                        result = subprocess.run(
+                            ["/usr/bin/docker", "compose", "down"], 
+                            cwd="/var/lib/wazigate/", 
+                            check=True, 
+                            capture_output=True, 
+                            text=True
+                        )
                         logging.info("Docker containers stopped.")
+                    except subprocess.CalledProcessError as e:
+                        logging.error(f"Docker cleanup failed. Error output: {e.stderr}")
                     except Exception as e:
-                        logging.error(f"Docker cleanup failed: {e}")
+                        logging.error(f"General error: {e}")
 
                     # 2. Sync and Shutdown
                     logging.info("Syncing file system...")
-                    os.system("sync")
+                    subprocess.run(["/usr/bin/sync"], check=True)
                     
                     logging.info("Performing shutdown now...")
-                    os.system("sudo shutdown -h now")
+                    subprocess.run(["/usr/sbin/shutdown", "-h", "now"], check=True)
                     break
+
+                i += 1
 
         except Exception as e:
             consecutive_errors += 1
@@ -94,7 +105,6 @@ def main():
                 logging.critical("UPS HAT communication lost permanently. Stopping service.")
                 sys.exit(1)
 
-        i += 1
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
