@@ -124,7 +124,7 @@ install -m 755 files/reconnect_wifi.timer "$ROOTFS_DIR/etc/systemd/system/reconn
 touch "$ROOT_FS/etc/do_not_reconnect_wifi"
 
 # Copy script for Waveshare UPS HAT
-install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/bin/ups_monitor.py"
+install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/local/bin/ups_monitor.py"
 install -m 755 files/ups_monitor.service "$ROOTFS_DIR/etc/systemd/system/ups_monitor.service"
 
 
