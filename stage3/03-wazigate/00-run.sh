@@ -121,11 +121,24 @@ install -m 755 files/qjs "$ROOTFS_DIR/usr/bin/"
 install -m 755 files/reconnect_wifi.sh "$ROOTFS_DIR/usr/bin/reconnect_wifi"
 install -m 755 files/reconnect_wifi.service "$ROOTFS_DIR/etc/systemd/system/reconnect_wifi.service"
 install -m 755 files/reconnect_wifi.timer "$ROOTFS_DIR/etc/systemd/system/reconnect_wifi.timer"
-touch "$ROOT_FS/etc/do_not_reconnect_wifi"
+touch "$ROOTFS_DIR/etc/do_not_reconnect_wifi"
 
 # Copy script for Waveshare UPS HAT
 install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/local/bin/ups_monitor.py"
 install -m 755 files/ups_monitor.service "$ROOTFS_DIR/etc/systemd/system/ups_monitor.service"
+
+# Global network prioritization (WLAN over GSM) & IPv4 preference
+echo "=== Configuring global network prioritization ==="
+
+# Ensure NetworkManager drop-in configuration directory exists in the rootfs
+mkdir -p "$ROOTFS_DIR/etc/NetworkManager/conf.d"
+
+# Copy pre-configured metric configuration files from the files/ directory
+install -m 644 files/90-wlan-metric.conf "$ROOTFS_DIR/etc/NetworkManager/conf.d/"
+install -m 644 files/91-gsm-metric.conf  "$ROOTFS_DIR/etc/NetworkManager/conf.d/"
+
+# Copy system-wide address sorting configuration to prioritize IPv4 over IPv6
+install -m 644 files/gai.conf "$ROOTFS_DIR/etc/"
 
 
 # Enable Wazigate services
