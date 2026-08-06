@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenVPN Automated Cold Boot Multi-Interface Fallback
+After=network.target network-online.target NetworkManager.service wazigate.service docker.service
+Wants=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/openvpn-fallback-boot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
