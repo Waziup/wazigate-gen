@@ -124,6 +124,7 @@ install -m 755 files/reconnect_wifi.timer "$ROOTFS_DIR/etc/systemd/system/reconn
 touch "$ROOTFS_DIR/etc/do_not_reconnect_wifi"
 
 # Copy openvpn boot service script to host 
+install -m 755 files/vpn-helper.sh "$ROOTFS_DIR/etc/NetworkManager/dispatcher.d/vpn-helper"
 install -m 755 files/openvpn-fallback-boot.sh "$ROOTFS_DIR/usr/bin/openvpn-fallback-boot"
 install -m 755 files/openvpn-boot-fallback.service "$ROOTFS_DIR/etc/systemd/system/openvpn-boot-fallback.service"
 
