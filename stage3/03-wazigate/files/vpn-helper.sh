@@ -10,9 +10,12 @@ touch "$LOG_FILE"
 log() {
 	echo "$(date '+%F %T') $1" >> "$LOG_FILE"
 }
-
-if [ "$STATUS" != "up" ] || [ "$IFACE" = "lo" ]; then
-	log "Connection is not up or Interface $IFACE is loopback, exiting."
+if [ "$IFACE" = "lo" ]; then
+	log "Interface $IFACE is loopback, exiting."
+	exit 0
+fi
+if [ "$STATUS" != "up" ]; then
+	log "Connection on $IFACE is not up exiting."
 	exit 0
 fi
 
@@ -68,14 +71,13 @@ while true; do
 	VPN_RAW=$(curl -s --max-time 5 http://localhost/device/id | xargs)
 
 	if [ -n "$VPN_RAW" ]; then
-		log "Received VPN name: $VPN_RAW"
+		log "Received Gateway ID: $VPN_RAW"
 		break
 	fi
 
 	log "API unavailable or returned empty response, retrying in 1 second..."
 	sleep 1
 done
-log "Found gateway id $VPN_RAW"
 
 VPN_NAME="${VPN_PREFIX}${VPN_RAW}"
 
