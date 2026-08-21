@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenVPN Automated Cold Boot Multi-Interface Fallback
+After=network.target NetworkManager.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/openvpn-fallback-boot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

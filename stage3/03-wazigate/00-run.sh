@@ -123,6 +123,11 @@ install -m 755 files/reconnect_wifi.service "$ROOTFS_DIR/etc/systemd/system/reco
 install -m 755 files/reconnect_wifi.timer "$ROOTFS_DIR/etc/systemd/system/reconnect_wifi.timer"
 touch "$ROOTFS_DIR/etc/do_not_reconnect_wifi"
 
+# Copy openvpn boot service script to host 
+install -m 755 files/vpn-helper.sh "$ROOTFS_DIR/etc/NetworkManager/dispatcher.d/vpn-helper"
+install -m 755 files/openvpn-fallback-boot.sh "$ROOTFS_DIR/usr/bin/openvpn-fallback-boot"
+install -m 755 files/openvpn-boot-fallback.service "$ROOTFS_DIR/etc/systemd/system/openvpn-boot-fallback.service"
+
 # Copy script for Waveshare UPS HAT
 install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/local/bin/ups_monitor.py"
 install -m 755 files/ups_monitor.service "$ROOTFS_DIR/etc/systemd/system/ups_monitor.service"
@@ -151,6 +156,7 @@ systemctl enable wazigate
 systemctl enable reconnect_wifi.timer
 systemctl enable shellinabox
 systemctl enable ups_monitor
+systemctl enable openvpn-boot-fallback.service
 EOF
 
 # Create log file for wazigate-setup
