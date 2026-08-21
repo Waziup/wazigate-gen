@@ -1,21 +1,115 @@
 [Unit]
 Description=Waveshare UPS Battery Monitor and Graceful Shutdown
-After=network.target docker.service
-StartLimitIntervalSec=120
-StartLimitBurst=3
+After=basic.target docker.service
+Wants=docker.service
+# Never give up on restarting: a monitor that systemd has rate-limited into
+# "failed" means the gateway runs with no battery protection at all.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/var/lib/wazigate/
-ExecStart=/usr/bin/python3 /usr/local/bin/ups_monitor.py
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment=DOCKER_HOST=unix:///var/run/docker.sock
 
-# Restart Logic:
-# Restart if it crashes, but stop if it fails 3 times in 2 minutes (to prevent loops if the HAT is missing)
-Restart=on-failure
-RestartSec=5
+# -u keeps python from buffering stderr, so the last log line before a power
+# cut actually reaches journald.
+ExecStart=/usr/bin/python3 -u /usr/local/bin/ups_monitor.py
+
+Restart=always
+RestartSec=15
+
+# Backstop: never let this unit hold a poweroff transaction open for the
+# default 90s. The monitor exits within a second of SIGTERM on its own.
+TimeoutStopSec=15
+
+# ==== ADJUST HERE ====
+# What to do when the battery runs out.
+#
+# "standby" (default): stop the containers, sync, remount root read-only and
+# KEEP RUNNING, so the monitor can notice mains coming back and resume. If it
+# does not come back, the HAT protection eventually cuts the rail - harmless
+# with a read-only root, and it leaves the Pi genuinely off so the next mains
+# return boots it.
+#
+# "poweroff": the old behaviour. On this HAT it is a trap - a halted Pi is
+# still fed by the battery, cannot see mains return, and the gateway stays
+# dark until somebody power-cycles it by hand.
+Environment=ON_TRIP=standby
+Environment=REMOUNT_RO=true
+# Leave standby above this voltage. Keep it well above SHUTDOWN_VOLTAGE: just
+# stopping the containers makes the pack rebound ~0.1 V.
+Environment=RESUME_VOLTAGE=6.90
+Environment=RESUME_TRIPS=3
+Environment=STANDBY_MIN_SECONDS=120
+# "containers" restarts the compose stack in place, "reboot" starts clean.
+Environment=RESUME_ACTION=containers
+
+# Stopping the containers is not enough to free the root filesystem: dockerd,
+# containerd and journald keep writable handles on it. These units are stopped
+# before quiescing and restarted in reverse order on resume. Quotes are
+# required, the value contains spaces.
+#
+# Listed in STOP order: application, database, container runtime. The reversed
+# start therefore brings the runtime and the database up before the application
+# that needs them.
+#
+# mongod is the important one: WiredTiger keeps its journal and lock files open
+# for writing, so a hard cut means journal replay on the next start, while a
+# clean stop writes a final checkpoint. If a read-only remount still fails, the
+# log names any further processes holding write handles.
+Environment="QUIESCE_UNITS=wazigate.service mongod.service docker.socket docker.service containerd"
+# If the read-only remount still fails, freeze the filesystem instead. A
+# freeze flushes everything and blocks further writes without caring about
+# open handles, so it works where a remount cannot.
+Environment=FREEZE_FALLBACK=true
+# Undo a frozen or read-only root left behind by an instance that died during
+# standby. Without this the gateway would stay wedged until someone noticed.
+Environment=STARTUP_RECOVER=true
+
+# Shut down at 6.50 V = 3.25 V per cell on a 2S pack. Above the ~3.0 V/cell
+# point where a Li-ion cell has only 2-3% capacity left and starts losing
+# cycle life, with margin for the sag the Pi load causes.
+Environment=SHUTDOWN_VOLTAGE=6.50
+# Last resort, 3.10 V/cell: shut down without waiting for trend confirmation,
+# unless the pack is measurably charging.
+Environment=HARD_FLOOR_VOLTAGE=6.20
+# Below this the readings are logged as warnings rather than info. Entering
+# and leaving the band is always logged immediately.
+Environment=WARN_VOLTAGE=7.00
+
+# The battery is CHECKED this often - cheap, no writes.
+Environment=CHECK_INTERVAL=10
+# It is only LOGGED this often. State changes (entering the warning band, trip
+# decisions, shutdown) are always logged immediately regardless.
+Environment=LOG_INTERVAL=300
+Environment=WARN_LOG_INTERVAL=300
+# Consecutive low readings required before acting (debounce).
+Environment=TRIPS_TO_ACT=3
+# History needed to tell discharge from charging before acting.
+Environment=TREND_MIN_SPAN=60
+Environment=FLOOR_MIN_SPAN=20
+
+Environment=COMPOSE_BIN=/usr/local/bin/docker-compose
+Environment=COMPOSE_DIR=/var/lib/wazigate/
+Environment=COMPOSE_TIMEOUT=45
+# Only used if systemd never signals us back after the poweroff request.
+Environment=ESCALATE_AFTER=30
+
+# Optional CSV trace, OFF by default: the journal is the log, and a row per
+# check is needless SD card wear. For a CALIBRATION outage, uncomment both
+# lines below to get a durable high-resolution discharge curve, then comment
+# them out again:
+Environment=TRACE_DIR=/var/log/ups-monitor
+Environment=WARN_LOG_INTERVAL=10
+
+# "exit"     -> a dead sensor exits (systemd restarts, gateway keeps running
+#               but WITHOUT battery protection - visible in systemctl status)
+# "shutdown" -> a dead sensor triggers a graceful shutdown (fail-safe)
+Environment=SENSOR_FAIL_ACTION=exit
+
+# Set to 1 to exercise the whole trip logic without ever powering off.
+#Environment=DRY_RUN=1
+# =====================
+
+# Needs root: I2C access, docker-compose, and poweroff.
 
 [Install]
 WantedBy=multi-user.target

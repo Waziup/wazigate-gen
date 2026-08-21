@@ -140,6 +140,9 @@ install -m 644 files/91-gsm-metric.conf  "$ROOTFS_DIR/etc/NetworkManager/conf.d/
 # Copy system-wide address sorting configuration to prioritize IPv4 over IPv6
 install -m 644 files/gai.conf "$ROOTFS_DIR/etc/"
 
+# Copy script for traffic surveillance service (deactivated by default)
+install -m 755 files/traffic_quota.py "$ROOTFS_DIR/usr/local/bin/"
+install -m 644 files/traffic-quota.service "$ROOTFS_DIR/etc/systemd/system/"
 
 # Enable Wazigate services
 on_chroot <<EOF

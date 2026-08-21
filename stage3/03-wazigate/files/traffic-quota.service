@@ -1,0 +1,29 @@
+[Unit]
+Description=Monthly traffic quota monitor with email alerts
+After=network-online.target
+Wants=network-online.target
+# Keep retrying: a monitor systemd has given up on is a quota nobody watches.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+
+# -u so the last log line before a power cut still reaches journald.
+ExecStart=/usr/bin/python3 -u /usr/local/bin/traffic_quota.py
+
+Restart=always
+RestartSec=30
+
+# Everything is configured in /etc/traffic-quota.conf (mode 0600, it can hold
+# SMTP credentials). Run "traffic_quota.py --setup" to create it.
+# Overrides for testing only:
+#Environment=TRAFFIC_QUOTA_CONFIG=/etc/traffic-quota.conf
+#Environment=TRAFFIC_QUOTA_STATE=/var/lib/traffic-quota/state.json
+
+# Needs to read /sys/class/net and write /var/lib/traffic-quota.
+User=root
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
