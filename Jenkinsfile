@@ -20,10 +20,10 @@ pipeline {
     stage('Deploy') {
       steps {
         dir('deploy') {
+          sh "sudo zip image_nightly-WaziGate.zip nightly-WaziGate.img"
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             // Flash to a SD card connected on /dev/sda
             sh "sudo dd bs=4M if=nightly-WaziGate.img of=/dev/sda conv=sync"
-            sh "sudo zip image_nightly-WaziGate.zip nightly-WaziGate.img"
           }
         }
       }
