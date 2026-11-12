@@ -215,7 +215,7 @@ export TARGET_HOSTNAME=${TARGET_HOSTNAME:-raspberrypi}
 
 export FIRST_USER_NAME=${FIRST_USER_NAME:-pi}
 export FIRST_USER_PASS=${FIRST_USER_PASS:-raspberry}
-export RELEASE=${RELEASE:-bullseye}
+export RELEASE=${RELEASE:-trixie}
 export WPA_ESSID
 export WPA_PASSWORD
 export WPA_COUNTRY
