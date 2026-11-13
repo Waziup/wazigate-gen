@@ -1,2 +1,9 @@
-raspberrypi-bootloader
-raspberrypi-kernel
+# Raspberry Pi kernel & boot firmware, trixie era (based on what the official
+# 2026-10-06 Raspberry Pi OS trixie image installs):
+#  - raspberrypi-bootloader / raspberrypi-kernel are gone; replaced by
+#    raspi-firmware + the linux-image-rpi-* meta-packages.
+#  - linux-image-rpi-v8  : kernels for Pi 3/4/CM4 and earlier (aarch64)
+#  - linux-image-rpi-2712: kernels for Pi 5 / CM5 (BCM2712)
+raspi-firmware
+linux-image-rpi-v8
+linux-image-rpi-2712

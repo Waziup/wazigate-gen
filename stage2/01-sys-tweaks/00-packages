@@ -1,4 +1,4 @@
-ssh less fbset sudo psmisc strace ed ncdu crda
+ssh less fbset sudo psmisc strace ed ncdu
 console-setup keyboard-configuration debconf-utils parted
 build-essential manpages-dev bash-completion gdb pkg-config
 python-is-python3
@@ -7,9 +7,11 @@ python3-gpiozero
 avahi-daemon
 lua5.1
 luajit
-hardlink ca-certificates curl
+ca-certificates curl
 fake-hwclock nfs-common usbutils
-libraspberrypi-dev libraspberrypi-doc libfreetype6-dev
+# libraspberrypi-dev/-doc were dropped for bookworm+; kernel headers now come
+# from the linux-headers-rpi-* metas. libfreetype6-dev was renamed.
+linux-headers-rpi-v8 linux-headers-rpi-2712 raspi-utils-core libfreetype-dev
 dosfstools
 dphys-swapfile
 raspberrypi-sys-mods
@@ -22,9 +24,11 @@ libmtp-runtime
 rsync
 htop
 man-db
-policykit-1
+# policykit-1 was split up in trixie
+polkitd pkexec
 ssh-import-id
-rng-tools
+# rng-tools was replaced by rng-tools5 in trixie
+rng-tools5
 ethtool
 ntfs-3g
 pciutils

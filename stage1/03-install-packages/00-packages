@@ -1,1 +1,3 @@
-libraspberrypi-bin libraspberrypi0
+# libraspberrypi-bin/libraspberrypi0 were dropped for bookworm+;
+# raspi-utils is the replacement (vcgencmd, dtmerge, ...).
+raspi-utils
