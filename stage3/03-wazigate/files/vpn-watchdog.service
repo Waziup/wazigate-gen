@@ -1,0 +1,8 @@
+[Unit]
+Description=Check and reconnect OpenVPN tunnel over active internet interface
+After=network-online.target NetworkManager.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/vpn-watchdog.sh systemd-timer check

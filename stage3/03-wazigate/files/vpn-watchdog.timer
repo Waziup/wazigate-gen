@@ -1,0 +1,10 @@
+[Unit]
+Description=Run OpenVPN watchdog every 60 seconds
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=60s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
