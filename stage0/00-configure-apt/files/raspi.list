@@ -1,3 +1,7 @@
-deb http://archive.raspberrypi.org/debian/ RELEASE main
+# The Raspberry Pi archive is still signed with SHA1, which Debian 13's Sequoia
+# verifier rejects by default. The allow-list is relaxed in
+# apt-sequoia.config (see stage0/00-configure-apt/00-run.sh), so normal
+# signature verification is kept here instead of using trusted=yes.
+deb http://archive.raspberrypi.com/debian/ RELEASE main
 # Uncomment line below then 'apt-get update' to enable 'apt-get source'
-#deb-src http://archive.raspberrypi.org/debian/ RELEASE main
+#deb-src http://archive.raspberrypi.com/debian/ RELEASE main
