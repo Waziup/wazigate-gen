@@ -1,3 +1,5 @@
 proc            /proc           proc    defaults          0       0
-BOOTDEV  /boot           vfat    defaults          0       2
+# bookworm+ layout: the boot partitions mounts at /boot/firmware, which is
+# where raspi-firmware and the rpi kernels install kernel*/firmware files
+BOOTDEV  /boot/firmware  vfat    defaults          0       2
 ROOTDEV  /               ext4    defaults,noatime  0       1

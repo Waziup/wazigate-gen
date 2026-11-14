@@ -53,23 +53,20 @@ rm -f "${ROOTFS_DIR}/root/.vnc/private.key"
 rm -f "${ROOTFS_DIR}/etc/vnc/updateid"
 
 update_issue "$(basename "${EXPORT_DIR}")"
-install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/issue.txt"
+install -m 644 "${ROOTFS_DIR}/etc/rpi-issue" "${ROOTFS_DIR}/boot/firmware/issue.txt"
 
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 
 
 {
-	if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
-		firmware=$(zgrep "firmware as of" \
-			"$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" | \
-			head -n1 | sed  -n 's|.* \([^ ]*\)$|\1|p')
-		printf "\nFirmware: https://github.com/raspberrypi/firmware/tree/%s\n" "$firmware"
+	kernel_ver=$(chroot "$ROOTFS_DIR" dpkg-query -W -f='${Version}' linux-image-rpi-v8 2>/dev/null || true)
+	if [ -n "$kernel_ver" ]; then
+		printf "\nKernel: https://github.com/raspberrypi/linux/tree/rpi-%s\n" "$kernel_ver"
 
-		kernel="$(curl -s -L "https://github.com/raspberrypi/firmware/raw/$firmware/extra/git_hash")"
-		printf "Kernel: https://github.com/raspberrypi/linux/tree/%s\n" "$kernel"
-
-		uname="$(curl -s -L "https://github.com/raspberrypi/firmware/raw/$firmware/extra/uname_string7")"
-		printf "Uname string: %s\n" "$uname"
+		firmware_ver=$(chroot "$ROOTFS_DIR" dpkg-query -W -f='${Version}' raspi-firmware 2>/dev/null || true)
+		if [ -n "$firmware_ver" ]; then
+			printf "Firmware: https://github.com/raspberrypi/firmware (raspi-firmware %s)\n" "$firmware_ver"
+		fi
 	fi
 
 	printf "\nPackages:\n"

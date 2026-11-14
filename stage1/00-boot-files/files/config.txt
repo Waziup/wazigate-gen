@@ -68,6 +68,16 @@ arm_64bit=1
 # Disable compensation for displays with overscan
 disable_overscan=1
 
+# Kernel selection (bookworm+ layout: firmware is installed by raspi-firmware
+# into /boot/firmware and the kernel lives there as kernel*.img)
+[pi5]
+# BCM2712 (Pi 5 / CM5) kernel
+kernel=kernel_2712.img
+[pi4]
+# BCM2711 and earlier: 64-bit kernel
+kernel=kernel8.img
+[all]
+
 [cm4]
 # Enable host mode on the 2711 built-in XHCI USB controller.
 # This line should be removed if the legacy DWC2 controller is required
