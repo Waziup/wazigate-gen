@@ -47,16 +47,6 @@ EOF
 # Disable all journalctl logs
 install -m 644 files/rsyslog.conf "$ROOTFS_DIR/etc/"
 
-# on_chroot <<EOF
-# # unmount echo u > "$ROOTFS_DIR/proc/sysrq-trigger"
-# # sync echo s > "$ROOTFS_DIR/proc/sysrq-trigger"
-# tune2fs -O ^has_journal /dev/mmcblk0p2
-# e2fsck -fy /dev/mmcblk0p2
-# echo s > "$ROOTFS_DIR/proc/sysrq-trigger"
-# # reboot echo b > "$ROOTFS_DIR/proc/sysrq-trigger"
-# EOF
-sed -i 's/has_journal,\?//g;s/features \= *$//g' "$ROOTFS_DIR/etc/mke2fs.conf"
-
 
 # Install rsync, alternative to cp, recommended by log2ram
 on_chroot <<EOF
