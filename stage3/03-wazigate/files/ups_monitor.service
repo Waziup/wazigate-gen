@@ -2,9 +2,14 @@
 Description=Waveshare UPS Battery Monitor and Graceful Shutdown
 After=basic.target docker.service
 Wants=docker.service
-# Never give up on restarting: a monitor that systemd has rate-limited into
-# "failed" means the gateway runs with no battery protection at all.
-StartLimitIntervalSec=0
+# Give up after 10 starts within an hour, e.g. when the HAT is not fitted:
+# each attempt already probes 5 times, so retrying forever only floods the
+# journal. The unit then stays "failed" (start-limit-hit) until the next boot,
+# which allows 10 attempts again. To retry by hand without a reboot:
+#   systemctl reset-failed ups_monitor && systemctl start ups_monitor
+# The window keeps rare crashes spread over months from adding up to 10.
+StartLimitIntervalSec=1h
+StartLimitBurst=10
 
 [Service]
 Type=simple
@@ -97,8 +102,8 @@ Environment=ESCALATE_AFTER=30
 # check is needless SD card wear. For a CALIBRATION outage, uncomment both
 # lines below to get a durable high-resolution discharge curve, then comment
 # them out again:
-Environment=TRACE_DIR=/var/log/ups-monitor
-Environment=WARN_LOG_INTERVAL=10
+#Environment=TRACE_DIR=/var/log/ups-monitor
+#Environment=WARN_LOG_INTERVAL=10
 
 # "exit"     -> a dead sensor exits (systemd restarts, gateway keeps running
 #               but WITHOUT battery protection - visible in systemctl status)
