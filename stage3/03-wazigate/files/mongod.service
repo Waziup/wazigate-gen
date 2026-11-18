@@ -12,6 +12,9 @@ ExecStartPre=rm -f /var/lib/mongodb/mongod.lock
 ExecStartPre=mongod --config /etc/mongod.conf --repair
 ExecStart=mongod --config /etc/mongod.conf
 PIDFile=/var/run/mongodb/mongod.pid
+# /run is a tmpfs, so the PID directory must be (re)created at every boot
+RuntimeDirectory=mongodb
+RuntimeDirectoryPreserve=yes
 # file size
 LimitFSIZE=infinity
 # cpu time
