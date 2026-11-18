@@ -50,4 +50,15 @@ dependencies_check()
 			exit 1
 		fi
 	fi
+
+	# debootstrap only knows suites its scripts directory has an entry for.
+	# Check up front so a stale host package fails here rather than half-way
+	# through stage0 with a misleading follow-on error.
+	if [[ -n "${RELEASE}" ]] && [[ ! -e "/usr/share/debootstrap/scripts/${RELEASE}" ]]; then
+		echo "Host debootstrap does not support release '${RELEASE}'"
+		echo "Installed: $(debootstrap --version 2>/dev/null | head -n1)"
+		echo "Expected script: /usr/share/debootstrap/scripts/${RELEASE}"
+		echo "Update debootstrap on the build host (trixie needs >= 1.0.125)"
+		exit 1
+	fi
 }
