@@ -7,6 +7,16 @@ bootstrap(){
 	local BOOTSTRAP_CMD=debootstrap
 	local BOOTSTRAP_ARGS=()
 
+	# Fail with an actionable message if the host debootstrap predates this
+	# suite. Otherwise debootstrap aborts, the failure is swallowed below, and
+	# every later stage fails with a confusing error instead.
+	if [ ! -e "/usr/share/debootstrap/scripts/$1" ]; then
+		log "ERROR: debootstrap has no script for suite '$1'"
+		log "Host debootstrap is $(debootstrap --version 2>/dev/null | head -n1) ($(debootstrap --version 2>/dev/null | sed 's/.* //'))"
+		log "trixie requires debootstrap >= 1.0.125; update debootstrap on the build host"
+		return 1
+	fi
+
 	#export http_proxy=${APT_PROXY}
 
 	if [ "$(dpkg --print-architecture)" !=  "armhf" ] && [ "$(dpkg --print-architecture)" !=  "arm64" ]; then
