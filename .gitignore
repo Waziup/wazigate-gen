@@ -10,3 +10,6 @@ apt-cacher-ng/
 
 # editor settings (machine-specific)
 .vscode/
+
+# internal migration report, kept out of the product repo
+TRIXIE_MIGRATION.md
