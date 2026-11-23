@@ -127,6 +127,13 @@ install -m 755 files/vpn-watchdog.timer "$ROOTFS_DIR/etc/systemd/system/vpn-watc
 install -m 755 files/ups_monitor.py "$ROOTFS_DIR/usr/local/bin/ups_monitor.py"
 install -m 755 files/ups_monitor.service "$ROOTFS_DIR/etc/systemd/system/ups_monitor.service"
 
+# WaziGate watchdog: restarts wazigate.service (start.sh repairs broken
+# containers) and reboots as last resort. Pauses while ups_monitor is in
+# standby (/run/wazigate-ups-standby).
+install -m 755 files/wazigate-watchdog.sh "$ROOTFS_DIR/usr/local/bin/wazigate-watchdog.sh"
+install -m 644 files/wazigate-watchdog.service "$ROOTFS_DIR/etc/systemd/system/wazigate-watchdog.service"
+install -m 644 files/wazigate-watchdog.timer "$ROOTFS_DIR/etc/systemd/system/wazigate-watchdog.timer"
+
 # Global network prioritization (WLAN over GSM) & IPv4 preference
 echo "=== Configuring global network prioritization ==="
 
@@ -154,6 +161,7 @@ systemctl enable reconnect_wifi.timer
 systemctl enable shellinabox
 systemctl enable ups_monitor
 systemctl enable vpn-watchdog.timer
+systemctl enable wazigate-watchdog.timer
 EOF
 
 # Create log file for wazigate-setup

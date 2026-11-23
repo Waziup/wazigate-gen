@@ -229,6 +229,11 @@ FSFREEZE_BIN    = _env_str("FSFREEZE_BIN", "fsfreeze")
 # died mid-standby. Without this the gateway stays wedged until someone
 # notices, which defeats the whole point of surviving unattended.
 STARTUP_RECOVER = _env_bool("STARTUP_RECOVER", True)
+# Marker telling other services (wazigate-watchdog) that the stack was stopped
+# on purpose, so they must not restart it or reboot. Lives in /run (tmpfs): it
+# stays writable while the root filesystem is read-only or frozen, and a
+# reboot removes it.
+STANDBY_MARKER = _env_str("STANDBY_MARKER", "/run/wazigate-ups-standby")
 
 # Optional CSV trace. OFF by default: the journal is the log, and writing a
 # row per check wears the SD card. Switch it on for a calibration outage,
@@ -563,6 +568,8 @@ def shutdown(reason, voltage):
                     "power off. Continuing to monitor.", COMPOSE_BIN, COMPOSE_DIR)
         return False
 
+    set_standby_marker(True, "shutdown: " + reason)
+
     if STOP_CONTAINERS:
         LOG.info("Stopping containers (timeout %.0fs)...", COMPOSE_TIMEOUT)
         if run([COMPOSE_BIN, "down"], timeout=COMPOSE_TIMEOUT, cwd=COMPOSE_DIR):
@@ -601,6 +608,18 @@ def shutdown(reason, voltage):
         except Exception as exc:
             LOG.error("Writing %r to %s failed: %s", value, path, exc)
     return True
+
+
+def set_standby_marker(active, reason=""):
+    """Create or remove STANDBY_MARKER. Best effort, never raises."""
+    try:
+        if active:
+            with open(STANDBY_MARKER, "w") as handle:
+                handle.write("%d %s\n" % (time.time(), reason))
+        elif os.path.exists(STANDBY_MARKER):
+            os.remove(STANDBY_MARKER)
+    except Exception as exc:
+        LOG.error("Updating standby marker %s failed: %s", STANDBY_MARKER, exc)
 
 
 def root_is_ro():
@@ -700,6 +719,9 @@ def enter_standby(reason, voltage):
         LOG.warning("DRY_RUN is set - would stop containers and quiesce now.")
         return False
 
+    # Before stopping anything, so the watchdog never sees a half-stopped stack
+    set_standby_marker(True, "standby: " + reason)
+
     if STOP_CONTAINERS:
         LOG.info("Stopping containers (timeout %.0fs)...", COMPOSE_TIMEOUT)
         if run([COMPOSE_BIN, "down"], timeout=COMPOSE_TIMEOUT, cwd=COMPOSE_DIR):
@@ -758,6 +780,8 @@ def leave_standby(voltage, shunt):
         else:
             LOG.error("Container restart failed - the stack needs attention.")
 
+    # The watchdog takes over again (and repairs the stack if the restart failed)
+    set_standby_marker(False)
     _in_standby = False
     _standby_since = None
     LOG.critical("Normal operation resumed.")
@@ -816,6 +840,10 @@ def main():
     if SENSOR_FAIL_ACTION not in ("exit", "shutdown"):
         LOG.error("SENSOR_FAIL_ACTION=%r is not exit or shutdown, using exit.",
                   SENSOR_FAIL_ACTION)
+
+    # A marker from an instance that died mid-standby would silence the
+    # watchdog forever: this instance is not in standby, so remove it.
+    set_standby_marker(False)
 
     if STARTUP_RECOVER:
         startup_recover()

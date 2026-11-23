@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the WaziGate watchdog periodically
+
+[Timer]
+# Give the gateway time to boot and run start.sh before the first check
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

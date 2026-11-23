@@ -1,0 +1,9 @@
+[Unit]
+Description=WaziGate watchdog (recover failed wazigate.service and broken containers)
+After=docker.service wazigate.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/wazigate-watchdog
+ExecStart=/usr/local/bin/wazigate-watchdog.sh
+TimeoutStartSec=10min
