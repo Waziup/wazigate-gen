@@ -45,7 +45,7 @@ update-rc.d dphys-swapfile remove
 systemctl disable dphys-swapfile
 EOF
 
-# Disable all journalctl logs
+# Rsyslog: drop all messages, journald keeps them (avoids duplicate writes)
 install -m 644 files/rsyslog.conf "$ROOTFS_DIR/etc/"
 
 

@@ -9,9 +9,15 @@ lua5.1
 luajit
 ca-certificates curl
 fake-hwclock nfs-common usbutils
-# libraspberrypi-dev/-doc were dropped for bookworm+; kernel headers now come
-# from the linux-headers-rpi-* metas. libfreetype6-dev was renamed.
-linux-headers-rpi-v8 linux-headers-rpi-2712 raspi-utils-core libfreetype-dev
+# libraspberrypi-dev/-doc were dropped for bookworm+. raspi-utils-core replaces
+# the tools; libfreetype6-dev was renamed.
+#
+# The linux-headers-rpi-* metas are deliberately NOT installed. They are only
+# needed to build kernel modules on the device (DKMS), which this image never
+# does, and each is ~150 MB of tens of thousands of small files -- very slow to
+# unpack under qemu emulation. They are NOT the equivalent of libraspberrypi-dev,
+# which was a userspace VideoCore package.
+raspi-utils-core libfreetype-dev
 dosfstools
 dphys-swapfile
 raspberrypi-sys-mods

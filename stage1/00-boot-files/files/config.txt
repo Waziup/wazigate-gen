@@ -71,7 +71,11 @@ disable_overscan=1
 # Kernel selection (bookworm+ layout: firmware is installed by raspi-firmware
 # into /boot/firmware and the kernel lives there as kernel*.img)
 [pi5]
-# BCM2712 (Pi 5 / CM5) kernel
+# BCM2712 (Pi 5 / CM5) kernel.
+# NOTE: linux-image-rpi-2712 is not installed in this image, so kernel_2712.img
+# is absent and Pi 5 / CM5 will not boot. This directive is inside the [pi5]
+# filter, so it is inert on Pi 3/4/CM4. Add linux-image-rpi-2712 back to
+# stage0/02-firmware/01-packages to restore Pi 5 support.
 kernel=kernel_2712.img
 [pi4]
 # BCM2711 and earlier: 64-bit kernel

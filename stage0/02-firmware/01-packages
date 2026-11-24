@@ -1,9 +1,12 @@
-# Raspberry Pi kernel & boot firmware, trixie era (based on what the official
-# 2026-10-06 Raspberry Pi OS trixie image installs):
+# Raspberry Pi kernel & boot firmware, trixie era:
 #  - raspberrypi-bootloader / raspberrypi-kernel are gone; replaced by
 #    raspi-firmware + the linux-image-rpi-* meta-packages.
-#  - linux-image-rpi-v8  : kernels for Pi 3/4/CM4 and earlier (aarch64)
-#  - linux-image-rpi-2712: kernels for Pi 5 / CM5 (BCM2712)
+#  - linux-image-rpi-v8: kernels for Pi 3/4/CM4 and earlier (aarch64)
+#
+# linux-image-rpi-2712 (Pi 5 / CM5) is deliberately NOT installed. WaziGate
+# targets Pi 3/4/CM4, and a second kernel costs a full module tree plus its own
+# depmod and update-initramfs run -- all under qemu emulation, which is what
+# pushed the build from ~22 min to ~1h43. To support Pi 5 / CM5, re-add it here
+# and see stage1/00-boot-files/files/config.txt.
 raspi-firmware
 linux-image-rpi-v8
-linux-image-rpi-2712
