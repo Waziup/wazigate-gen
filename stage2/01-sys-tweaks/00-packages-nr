@@ -1,3 +1,6 @@
 cifs-utils
-libcamera-apps-lite
-mkvtoolnix
+# libcamera-apps-lite and mkvtoolnix were dropped: between them they pulled in
+# 48 packages / ~127 MB (Qt6 core, libicu76, libtensorflow-lite, libcamera,
+# libmatroska, libflac, libdvdread). WaziGate is a headless LoRa gateway with
+# no camera and no video muxing. Re-add libcamera-apps-lite here if a camera
+# is ever fitted.

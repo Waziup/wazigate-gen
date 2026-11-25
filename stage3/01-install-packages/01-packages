@@ -5,5 +5,9 @@ network-manager-openvpn
 openvpn-systemd-resolved
 iputils-ping
 vim wazigate 
-mongodb-org=6.0.30 mongodb-org-server=6.0.30 mongodb-org-shell=6.0.30 mongodb-org-mongos=6.0.30 mongodb-org-tools=6.0.30  
+# Only the server. The mongodb-org metapackage and mongodb-org-tools pulled in
+# mongodb-mongosh (59 MB), mongodb-database-tools (61 MB) and mongodb-org-mongos
+# (22 MB, the sharding router) -- none of which this single-node gateway uses.
+# For on-device debugging: apt-get install mongodb-mongosh
+mongodb-org-server=6.0.30
 redis-server

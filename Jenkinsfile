@@ -1,5 +1,11 @@
 pipeline {
   agent any
+  options {
+    // There was no timeout at all: a hung debootstrap ran until someone noticed.
+    // Tighten this once stage0 is confirmed fast.
+    timeout(time: 3, unit: 'HOURS')
+    timestamps()
+  }
   environment {
     IMG_NAME              = 'WaziGate'
     IMG_DATE              = 'nightly'
@@ -14,6 +20,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
+        sh 'docker run --privileged --rm tonistiigi/binfmt --install arm64'
         sh 'sudo -E ./build.sh'
       }
     }
@@ -22,8 +29,20 @@ pipeline {
         dir('deploy') {
           sh "sudo zip image_nightly-WaziGate.zip nightly-WaziGate.img"
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            // Flash to a SD card connected on /dev/sda
-            sh "sudo dd bs=4M if=nightly-WaziGate.img of=/dev/sda conv=sync"
+            // Flash to the SD card reader, addressed by its stable by-id path.
+            // /dev/sda is assigned by enumeration order: if the reader is absent
+            // or the bus order changes, that name can point at a system disk, and
+            // this runs as root inside catchError. Skip rather than guess.
+            sh '''
+              CARD=/dev/disk/by-id/usb-Mass_Storage_Device_121220160204-0:0
+              if [ ! -e "$CARD" ]; then
+                echo "SD card reader not present at $CARD -- skipping flash."
+                exit 0
+              fi
+              echo "Flashing to $(readlink -f "$CARD")"
+              sudo dd bs=4M if=nightly-WaziGate.img of="$CARD" conv=sync status=progress
+              sync
+            '''
           }
         }
       }

@@ -1,4 +1,20 @@
-wpasupplicant wireless-tools firmware-atheros firmware-brcm80211 firmware-libertas firmware-misc-nonfree firmware-realtek
+wpasupplicant wireless-tools
+# Wi-Fi firmware. The onboard radio on Pi 3B/3B+/4B/CM4 is Broadcom/Cypress
+# (BCM43438 on the 3B, BCM43455/CYW43455 on 3B+/4/CM4), so firmware-brcm80211
+# is mandatory. Onboard Bluetooth firmware comes from bluez-firmware, pulled in
+# by pi-bluetooth, and is unaffected by what is dropped here.
+#
+# Dropped:
+#   firmware-atheros  (38 MB) - nearly all of it is ath10k/ath11k firmware and
+#     board files for PCIe cards, and a Pi 3/4 has no PCIe slot. Only ath9k_htc
+#     USB dongles (e.g. TP-Link TL-WN722N v1) lose support.
+#   firmware-libertas (3.6 MB) - Marvell Libertas. No Pi uses it and the USB
+#     dongles that did are long obsolete.
+#
+# Kept firmware-realtek + firmware-misc-nonfree (8.5 MB combined): Realtek and
+# Ralink/MediaTek are the two most common chipsets in the cheap USB Wi-Fi
+# dongles field users plug in -- not worth the support calls to save 8 MB.
+firmware-brcm80211 firmware-misc-nonfree firmware-realtek
 raspberrypi-net-mods
 dhcpcd5
 net-tools

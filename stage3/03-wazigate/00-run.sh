@@ -11,7 +11,9 @@ WAZIGATE_DIR=$ROOTFS_DIR/var/lib/wazigate
 install -m 644 files/mongod.service "$ROOTFS_DIR/lib/systemd/system/"
 install -m 644 files/mongod.conf "$ROOTFS_DIR/etc/"
 on_chroot <<EOF
-sudo apt-mark hold mongodb-org mongodb-org-server mongodb-org-shell mongodb-org-mongos mongodb-org-tools
+# Pin the server so an apt upgrade cannot jump a major version (MongoDB cannot
+# skip majors). Only the server is installed now; see stage3/01-install-packages.
+sudo apt-mark hold mongodb-org-server
 # MongoDB 6.0 needs an empty-by-default log dir; config sends logs to /dev/null
 install -d -m 755 -o mongodb -g mongodb /var/log/mongodb
 install -d -m 755 -o mongodb -g mongodb /var/lib/mongodb
