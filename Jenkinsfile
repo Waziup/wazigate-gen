@@ -35,8 +35,8 @@ pipeline {
             // this runs as root inside catchError. Skip rather than guess.
             sh '''
               CARD=/dev/disk/by-id/usb-Mass_Storage_Device_121220160204-0:0
-              if [ ! -e "$CARD" ]; then
-                echo "SD card reader not present at $CARD -- skipping flash."
+              if ! sudo blockdev --getsize64 "$CARD" >/dev/null 2>&1; then
+                echo "No readable SD card at $CARD -- skipping flash."
                 exit 0
               fi
               echo "Flashing to $(readlink -f "$CARD")"

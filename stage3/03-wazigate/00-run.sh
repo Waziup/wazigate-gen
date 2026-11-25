@@ -168,3 +168,20 @@ EOF
 
 # Create log file for wazigate-setup
 #touch "$ROOTFS_DIR/tmp/wazigate-setup-step.txt"
+
+# Undo the update-initramfs diversion from stage0/00-configure-apt and build
+# the initramfs exactly once, now that every kernel and module package is in
+# place. This is the last stage before export-image.
+on_chroot << EOF
+rm -f /usr/sbin/update-initramfs
+dpkg-divert --local --rename --remove /usr/sbin/update-initramfs
+update-initramfs -c -k all 2>/dev/null || update-initramfs -u -k all
+EOF
+
+# An image without an initramfs does not boot, and the suppression above would
+# hide that until someone flashed a card. Fail the build here instead.
+if [ ! -e "$ROOTFS_DIR/boot/firmware/initramfs8" ]; then
+	echo "ERROR: /boot/firmware/initramfs8 was not generated - the image would not boot." >&2
+	echo "The update-initramfs diversion in stage0/00-configure-apt was not undone correctly." >&2
+	exit 1
+fi

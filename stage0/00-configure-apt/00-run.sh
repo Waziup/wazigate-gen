@@ -36,3 +36,13 @@ dpkg --add-architecture arm64
 apt-get update
 apt-get dist-upgrade -y
 EOF
+
+# Build-time only: stop initramfs-tools regenerating the initramfs on every
+# trigger. Each run costs ~60s under emulation, a full build fired five of
+# them, and only the last one ships. The diversion makes update-initramfs a
+# no-op for the rest of the build; stage3/03-wazigate/00-run.sh removes it,
+# generates the initramfs once, and fails the build if it is missing.
+on_chroot << EOF
+dpkg-divert --local --rename --add /usr/sbin/update-initramfs
+ln -sf /bin/true /usr/sbin/update-initramfs
+EOF
