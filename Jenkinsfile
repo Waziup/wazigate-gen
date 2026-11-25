@@ -20,7 +20,15 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'docker run --privileged --rm tonistiigi/binfmt --install arm64'
+        // --install alone is a no-op when any handler is already registered, so
+        // uninstall first. The cat records which emulator this build actually ran
+        // on -- guessing that cost us several builds.
+        sh '''
+          docker run --privileged --rm tonistiigi/binfmt --uninstall qemu-aarch64 || true
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+          echo "--- active aarch64 binfmt handler ---"
+          cat /proc/sys/fs/binfmt_misc/qemu-aarch64
+        '''
         sh 'sudo -E ./build.sh'
       }
     }

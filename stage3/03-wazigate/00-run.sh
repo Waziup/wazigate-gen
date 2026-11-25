@@ -185,3 +185,16 @@ if [ ! -e "$ROOTFS_DIR/boot/firmware/initramfs8" ]; then
 	echo "The update-initramfs diversion in stage0/00-configure-apt was not undone correctly." >&2
 	exit 1
 fi
+
+# Boot sanity: cmdline.txt sets init=, and if that target is missing from the
+# image the kernel panics instead of booting -- which no build log would show.
+# 07-resize-init.diff points it at raspberrypi-sys-mods' firstboot, the
+# bookworm+ replacement for raspi-config's init_resize.sh (which looked for the
+# boot partition at /boot and broke when trixie moved it to /boot/firmware).
+INIT_BIN="$(sed -n 's|.*init=\([^ ]*\).*|\1|p' "$ROOTFS_DIR/boot/firmware/cmdline.txt")"
+if [ -n "$INIT_BIN" ] && [ ! -e "$ROOTFS_DIR$INIT_BIN" ]; then
+	echo "ERROR: cmdline.txt sets init=$INIT_BIN but that file is not in the image." >&2
+	echo "The Pi would panic on boot. Check stage2/01-sys-tweaks/00-patches/07-resize-init.diff" >&2
+	echo "and that raspberrypi-sys-mods is still in stage2/01-sys-tweaks/00-packages." >&2
+	exit 1
+fi
