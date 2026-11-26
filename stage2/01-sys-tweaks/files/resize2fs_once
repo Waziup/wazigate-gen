@@ -14,6 +14,12 @@ case "$1" in
     log_daemon_msg "Starting resize2fs_once"
     ROOT_DEV=$(findmnt / -o source -n) &&
     resize2fs $ROOT_DEV &&
+    # The initramfs premount script local-premount/resize_early only runs when
+    # the kernel cmdline carries a " resize" token, and by now it has already
+    # grown partition 2 on this boot. Strip the token so it does not rewrite the
+    # partition table on every subsequent boot. Harmless if rpi-resize.service
+    # got there first.
+    sed -i -e 's/ resize$//' -e 's/ resize / /' /boot/firmware/cmdline.txt &&
     update-rc.d resize2fs_once remove &&
     rm /etc/init.d/resize2fs_once &&
     log_end_msg $?

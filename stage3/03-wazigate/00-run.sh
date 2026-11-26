@@ -186,26 +186,50 @@ if [ ! -e "$ROOTFS_DIR/boot/firmware/initramfs8" ]; then
 	exit 1
 fi
 
-# Boot sanity: cmdline.txt sets init=, and if that target is missing from the
-# image the kernel panics instead of booting -- which no build log would show.
-# The target must grow partition 2 to fill the card; resize2fs_once only grows
-# the filesystem into the partition afterwards, so dropping init= leaves root
-# pinned at the image size. raspi-config's init_resize.sh is not usable on
-# trixie: it reads `findmnt /boot`, which is empty now that the vfat is at
-# /boot/firmware, and aborts with "Boot and root partitions are on different
-# devices". See stage2/01-sys-tweaks/00-patches/07-resize-init.diff.
-INIT_BIN="$(sed -n 's|.*init=\([^ ]*\).*|\1|p' "$ROOTFS_DIR/boot/firmware/cmdline.txt")"
-if [ -n "$INIT_BIN" ] && [ ! -e "$ROOTFS_DIR$INIT_BIN" ]; then
-	echo "ERROR: cmdline.txt sets init=$INIT_BIN but that file is not in the image." >&2
-	echo "The Pi would panic on boot." >&2
-	echo "--- contents of $(dirname "$INIT_BIN") in the image ---" >&2
-	ls -la "$ROOTFS_DIR$(dirname "$INIT_BIN")" >&2 2>&1 || echo "(directory does not exist)" >&2
-	echo "--- candidates shipped by raspberrypi-sys-mods / raspi-config ---" >&2
+# Boot sanity. The first-boot resize no longer hangs off cmdline's init=:
+# raspberrypi-sys-mods dropped /usr/lib/raspberrypi-sys-mods/firstboot and moved
+# the work into the initramfs, as
+#   /usr/share/initramfs-tools/hooks/firstboot
+#   /usr/share/initramfs-tools/scripts/local-premount/resize_early
+# resize_early grows partition 2 before root is mounted; resize2fs_once (enabled
+# in stage2/01-sys-tweaks/01-run.sh) then grows the filesystem into it. None of
+# that runs unless the firmware loads the initramfs, and the firmware only does
+# that when config.txt says so -- stage1/00-boot-files overwrites whatever
+# raspi-firmware wrote, so the directive must be in our own config.txt.
+CMDLINE="$ROOTFS_DIR/boot/firmware/cmdline.txt"
+CONFIG="$ROOTFS_DIR/boot/firmware/config.txt"
+
+if grep -q 'init=' "$CMDLINE"; then
+	echo "ERROR: cmdline.txt still sets init=, but raspberrypi-sys-mods no longer" >&2
+	echo "ships a firstboot binary -- the Pi would panic. Remove init= from" >&2
+	echo "stage2/01-sys-tweaks/00-patches/07-resize-init.diff." >&2
+	exit 1
+fi
+
+# resize_early bails out unless the cmdline carries a " resize" token; without
+# it the card is never expanded. resize2fs_once strips the token on first boot.
+if ! grep -qE '(^| )resize( |$)' "$CMDLINE"; then
+	echo "ERROR: cmdline.txt has no 'resize' token, so the initramfs premount" >&2
+	echo "script resize_early exits immediately and the card is never expanded." >&2
+	echo "Add it in stage2/01-sys-tweaks/00-patches/07-resize-init.diff." >&2
+	exit 1
+fi
+
+if ! grep -qE '^[[:space:]]*(auto_initramfs=1|initramfs[[:space:]]+)' "$CONFIG"; then
+	echo "ERROR: config.txt does not tell the firmware to load an initramfs." >&2
+	echo "Without it resize_early never runs and root stays at the image size on" >&2
+	echo "every card. Add auto_initramfs=1 to stage1/00-boot-files/files/config.txt." >&2
+	exit 1
+fi
+
+RESIZE_EARLY="/usr/share/initramfs-tools/scripts/local-premount/resize_early"
+if [ ! -e "$ROOTFS_DIR$RESIZE_EARLY" ]; then
+	echo "ERROR: $RESIZE_EARLY is missing from the image." >&2
+	echo "The card would never be expanded. raspberrypi-sys-mods has moved it" >&2
+	echo "again; these are the resize-related files it and raspi-config ship:" >&2
 	grep -hiE 'firstboot|resize|expand' \
 		"$ROOTFS_DIR/var/lib/dpkg/info/raspberrypi-sys-mods.list" \
 		"$ROOTFS_DIR"/var/lib/dpkg/info/raspi-config*.list 2>/dev/null \
 		|| echo "(no matching files in either package)" >&2
-	echo "--- end ---" >&2
-	echo "Point init= in 07-resize-init.diff at one of the paths listed above." >&2
 	exit 1
 fi
