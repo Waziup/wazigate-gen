@@ -188,13 +188,24 @@ fi
 
 # Boot sanity: cmdline.txt sets init=, and if that target is missing from the
 # image the kernel panics instead of booting -- which no build log would show.
-# 07-resize-init.diff points it at raspberrypi-sys-mods' firstboot, the
-# bookworm+ replacement for raspi-config's init_resize.sh (which looked for the
-# boot partition at /boot and broke when trixie moved it to /boot/firmware).
+# The target must grow partition 2 to fill the card; resize2fs_once only grows
+# the filesystem into the partition afterwards, so dropping init= leaves root
+# pinned at the image size. raspi-config's init_resize.sh is not usable on
+# trixie: it reads `findmnt /boot`, which is empty now that the vfat is at
+# /boot/firmware, and aborts with "Boot and root partitions are on different
+# devices". See stage2/01-sys-tweaks/00-patches/07-resize-init.diff.
 INIT_BIN="$(sed -n 's|.*init=\([^ ]*\).*|\1|p' "$ROOTFS_DIR/boot/firmware/cmdline.txt")"
 if [ -n "$INIT_BIN" ] && [ ! -e "$ROOTFS_DIR$INIT_BIN" ]; then
 	echo "ERROR: cmdline.txt sets init=$INIT_BIN but that file is not in the image." >&2
-	echo "The Pi would panic on boot. Check stage2/01-sys-tweaks/00-patches/07-resize-init.diff" >&2
-	echo "and that raspberrypi-sys-mods is still in stage2/01-sys-tweaks/00-packages." >&2
+	echo "The Pi would panic on boot." >&2
+	echo "--- contents of $(dirname "$INIT_BIN") in the image ---" >&2
+	ls -la "$ROOTFS_DIR$(dirname "$INIT_BIN")" >&2 2>&1 || echo "(directory does not exist)" >&2
+	echo "--- candidates shipped by raspberrypi-sys-mods / raspi-config ---" >&2
+	grep -hiE 'firstboot|resize|expand' \
+		"$ROOTFS_DIR/var/lib/dpkg/info/raspberrypi-sys-mods.list" \
+		"$ROOTFS_DIR"/var/lib/dpkg/info/raspi-config*.list 2>/dev/null \
+		|| echo "(no matching files in either package)" >&2
+	echo "--- end ---" >&2
+	echo "Point init= in 07-resize-init.diff at one of the paths listed above." >&2
 	exit 1
 fi
