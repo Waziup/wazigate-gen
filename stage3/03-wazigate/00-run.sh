@@ -5,20 +5,14 @@ WAZIGATE_DIR=$ROOTFS_DIR/var/lib/wazigate
 # libseccomp2 >= 2.5 (the version matching newer kernels/userspace, previously
 # pulled from buster-backports) ships with Debian 12+ base, so no backports needed.
 
-# Overwrite mongodb service and conf file on host
-# MongoDB 6.0 replaces the packaged unit, so install ours afterwards and keep it
-# enabled across upgrades.
-install -m 644 files/mongod.service "$ROOTFS_DIR/lib/systemd/system/"
-install -m 644 files/mongod.conf "$ROOTFS_DIR/etc/"
-on_chroot <<EOF
-# Pin the server so an apt upgrade cannot jump a major version (MongoDB cannot
-# skip majors). Only the server is installed now; see stage3/01-install-packages.
-sudo apt-mark hold mongodb-org-server
-# MongoDB 6.0 needs an empty-by-default log dir; config sends logs to /dev/null
-install -d -m 755 -o mongodb -g mongodb /var/log/mongodb
-install -d -m 755 -o mongodb -g mongodb /var/lib/mongodb
-install -d -m 755 -o mongodb -g mongodb /var/run/mongodb
-EOF
+# MongoDB is a container now, not a host service -- see
+# stage3/01-install-packages/01-packages for the ARMv8.2-A / libssl1.1 reason.
+# Only the data directory is prepared here: the compose service bind-mounts
+# /var/lib/mongodb to /data/db, so a gateway that is updated rather than
+# reflashed keeps its database, and the official image's entrypoint chowns it
+# to its own mongodb user on first start.
+install -d -m 755 "$ROOTFS_DIR/var/lib/mongodb"
+
 
 # Overwrite redis.conf file on host 
 install -m 644 files/redis.conf "$ROOTFS_DIR/etc/redis/"
@@ -94,12 +88,26 @@ install -m 644 files/log2ram.conf "$ROOTFS_DIR/etc/"
 # Show text-ui on login
 echo -e "# Add wazi-config on startup:\nsudo wazi-config" >> "$ROOTFS_DIR/home/$FIRST_USER_NAME/.profile"
 
-# Install shellinabox dependencies copy executable and service to host
+# shellinaboxd is built from source with --disable-ssl (tools/build-shellinaboxd.sh),
+# so it links no OpenSSL at all. The 2023 binary linked libssl1.1 and could not
+# start on trixie. These are the runtime libraries it does link -- the -dev
+# packages that used to be installed here were never needed on a gateway.
 on_chroot <<EOF
-apt-get install -y -qq --no-install-recommends libssl-dev libpam0g-dev zlib1g-dev
+apt-get install -y -qq --no-install-recommends libpam0g zlib1g
 EOF
 install -m 755 files/shellinaboxd "$ROOTFS_DIR/usr/bin/"
 install -m 755 files/shellinabox.service "$ROOTFS_DIR/etc/systemd/system/"
+
+# The binary is committed to this repo, so a stale one would sail through the
+# build and only fail on the gateway, as the 2023 libssl1.1 build did. It is
+# built with --disable-ssl, so any reference to libssl means the committed
+# binary is not the one tools/build-shellinaboxd.sh produces.
+if grep -qa 'libssl\.so' "$ROOTFS_DIR/usr/bin/shellinaboxd"; then
+	echo "ERROR: files/shellinaboxd still references libssl. The committed binary" >&2
+	echo "is the old OpenSSL-linked build and shellinaboxd will not start on" >&2
+	echo "trixie. Rebuild it with tools/build-shellinaboxd.sh and commit it." >&2
+	exit 1
+fi
 
 # Install Network Time Protocol (NTP) to sync time during runtime
 # Classic 'ntp' was removed from Debian; 'ntpsec' is its maintained successor
@@ -157,7 +165,6 @@ install -m 644 files/traffic-quota.service "$ROOTFS_DIR/etc/systemd/system/"
 # Enable Wazigate services
 on_chroot <<EOF
 systemctl enable NetworkManager-dispatcher.service
-systemctl enable mongod
 systemctl enable wazigate
 systemctl enable reconnect_wifi.timer
 systemctl enable shellinabox

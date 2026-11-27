@@ -6,12 +6,12 @@ install -m 644 files/raspi.list "${ROOTFS_DIR}/etc/apt/sources.list.d/"
 # Debian 13 ships apt with the Sequoia OpenPGP verifier.
 #
 # Its shipped policy only permitted SHA1 signatures "until 2026", and that
-# window has now expired. The Raspberry Pi archive and the MongoDB repository
-# are both signed with SHA1, so `apt-get update` fails on them with
+# window has now expired. The Raspberry Pi archive is signed with SHA1, so
+# `apt-get update` fails on it with
 # "OpenPGP signature verification failed / is not signed".
 #
 # This build-time policy override re-enables SHA1 hashing for apt's Sequoia
-# verifier so those two third-party repositories can still be used. Signatures
+# verifier so that archive can still be used. Signatures
 # are still verified - this relaxes the hash algorithm allow-list, it does not
 # disable verification.
 install -d -m 755 "${ROOTFS_DIR}/etc/crypto-policies/back-ends"

@@ -52,15 +52,16 @@ Environment=RESUME_ACTION=containers
 # before quiescing and restarted in reverse order on resume. Quotes are
 # required, the value contains spaces.
 #
-# Listed in STOP order: application, database, container runtime. The reversed
-# start therefore brings the runtime and the database up before the application
-# that needs them.
+# Listed in STOP order: application, then container runtime. The reversed
+# start therefore brings the runtime up before the application that needs
+# it.
 #
-# mongod is the important one: WiredTiger keeps its journal and lock files open
-# for writing, so a hard cut means journal replay on the next start, while a
-# clean stop writes a final checkpoint. If a read-only remount still fails, the
-# log names any further processes holding write handles.
-Environment="QUIESCE_UNITS=wazigate.service mongod.service docker.socket docker.service containerd"
+# mongod is no longer in this list: it runs as the wazigate-mongo container
+# and is stopped by the "docker-compose down" that runs BEFORE these units,
+# which gives WiredTiger a clean SIGTERM and a final checkpoint inside
+# COMPOSE_TIMEOUT. If a read-only remount still fails, the log names any
+# further processes holding write handles.
+Environment="QUIESCE_UNITS=wazigate.service docker.socket docker.service containerd"
 # If the read-only remount still fails, freeze the filesystem instead. A
 # freeze flushes everything and blocks further writes without caring about
 # open handles, so it works where a remount cannot.

@@ -5,9 +5,18 @@ network-manager-openvpn
 openvpn-systemd-resolved
 iputils-ping
 vim wazigate 
-# Only the server. The mongodb-org metapackage and mongodb-org-tools pulled in
-# mongodb-mongosh (59 MB), mongodb-database-tools (61 MB) and mongodb-org-mongos
-# (22 MB, the sharding router) -- none of which this single-node gateway uses.
-# For on-device debugging: apt-get install mongodb-mongosh
-mongodb-org-server=6.0.30
+# MongoDB is deliberately NOT installed on the host any more.
+#
+# Every MongoDB build from 4.4.19 onwards requires ARMv8.2-A atomics (LSE).
+# The gateway's Cortex-A72 is ARMv8.0-A -- "lscpu" lists no "atomics" flag --
+# so mongod 6.0.30 was killed with SIGILL on the first boot that got far
+# enough to run it. 4.4.18 is the last version this CPU executes, and it links
+# libssl1.1, which trixie does not ship: there is no version that satisfies
+# both constraints natively.
+#
+# It therefore runs as a container (service "wazigate-mongo" in
+# /var/lib/wazigate/docker-compose.yml, from the WaziGate repo), which carries
+# its own OpenSSL 1.1 while the host stays on OpenSSL 3. The container uses
+# network_mode: host and binds 127.0.0.1:27017, exactly where /usr/bin/wazigate
+# expects it, so nothing else changed.
 redis-server

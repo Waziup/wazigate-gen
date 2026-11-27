@@ -7,6 +7,9 @@ install -m 644 files/ttyoutput.conf	"${ROOTFS_DIR}/etc/systemd/system/rc-local.s
 
 install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
 
+install -d				"${ROOTFS_DIR}/etc/systemd/system/ssh.service.d"
+install -m 644 files/ssh-hostkeys.conf	"${ROOTFS_DIR}/etc/systemd/system/ssh.service.d/"
+
 install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
 install -m 755 files/rc.local		"${ROOTFS_DIR}/etc/"
